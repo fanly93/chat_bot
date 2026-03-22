@@ -80,14 +80,20 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   setCurrentId: (id) => {
-    set({ currentId: id, messages: [] });
+    const { conversations } = get();
+    const conv = conversations.find((c) => c.id === id);
+    set({
+      currentId: id,
+      messages: [],
+      ...(conv ? { selectedModel: conv.model } : {}),
+    });
     if (id) get().loadMessages(id);
   },
 
   loadMessages: async (conversationId) => {
     try {
       const detail = await apiGetConversation(conversationId);
-      set({ messages: detail.messages });
+      set({ messages: detail.messages, selectedModel: detail.model });
     } catch {
       set({ messages: [] });
     }
@@ -123,10 +129,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   setSelectedModel: (model) => {
     set({ selectedModel: model });
-    // 同步更新当前空对话的模型
+    // 同步更新当前对话的模型（不论是否已有标题）
     const { conversations, currentId } = get();
     const current = conversations.find((c) => c.id === currentId);
-    if (current && current.title === "新对话") {
+    if (current && current.model !== model) {
       apiUpdateConversation(current.id, { model }).catch(() => {});
       set((s) => ({
         conversations: s.conversations.map((c) =>
@@ -161,7 +167,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   sendMessage: async (content) => {
-    const { currentId, isStreaming, enableSearch } = get();
+    const { currentId, isStreaming, enableSearch, selectedModel } = get();
     if (isStreaming || !currentId) return;
 
     const convId = currentId;
@@ -269,6 +275,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       },
       abortController.signal,
       enableSearch,
+      selectedModel,
     );
   },
 

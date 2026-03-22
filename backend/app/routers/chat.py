@@ -132,6 +132,12 @@ async def send_message(
     if not conv:
         raise HTTPException(status_code=404, detail="对话不存在")
 
+    # 如果前端指定了模型，同步更新 conv.model
+    from app.services.llm_service import MODEL_CONFIG
+    if req.model and req.model in MODEL_CONFIG and req.model != conv.model:
+        conv.model = req.model
+        await db.flush()
+
     user_msg = Message(
         conversation_id=conv.id,
         role="user",
@@ -150,6 +156,7 @@ async def send_message(
     user_content = req.content
     conv_id = conv.id
     conv_title = conv.title
+    conv_model = conv.model  # 快照，避免闭包中引用被修改的 conv
 
     async def event_generator():
         import json as _json
@@ -171,7 +178,7 @@ async def send_message(
                 yield f"data: {_json.dumps({'type': 'search_error', 'message': str(e)}, ensure_ascii=False)}\n\n"
 
         # ── LLM 流式调用 ─────────────────────────────────────────────
-        async for event in stream_chat(conv.model, llm_context):
+        async for event in stream_chat(conv_model, llm_context):
             yield event
 
             if event.startswith("data: "):

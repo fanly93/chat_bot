@@ -217,6 +217,7 @@ export async function apiStreamMessage(
   callbacks: StreamCallbacks,
   signal?: AbortSignal,
   enableSearch: boolean = false,
+  model?: string,
 ) {
   const { access } = (() => {
     if (typeof window === "undefined") return { access: null };
@@ -231,7 +232,7 @@ export async function apiStreamMessage(
       "Content-Type": "application/json",
       ...(access ? { Authorization: `Bearer ${access}` } : {}),
     },
-    body: JSON.stringify({ content, enable_search: enableSearch }),
+    body: JSON.stringify({ content, enable_search: enableSearch, model: model ?? null }),
     signal,
   });
 

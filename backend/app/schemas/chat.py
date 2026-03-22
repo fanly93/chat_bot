@@ -40,3 +40,4 @@ class ConversationDetail(ConversationResponse):
 class SendMessageRequest(BaseModel):
     content: str = Field(min_length=1, max_length=20000)
     enable_search: bool = False
+    model: str | None = None  # 前端指定的模型，覆盖 conv.model
