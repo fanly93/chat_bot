@@ -1,48 +1,57 @@
 ---
 name: ChatBot 对话系统规划
-overview: 基于 Next.js (前端) + FastAPI (后端) 构建一个支持多模型切换、流式输出、用户认证、多轮对话管理、Markdown 渲染和联网搜索的类 ChatGPT 对话问答系统。
+overview: 基于 Next.js (前端) + FastAPI (后端) 构建一个支持多模型切换、流式输出、用户认证、多轮对话管理、Markdown 渲染、思考链展示和联网搜索的类 ChatGPT 对话问答系统。
 todos:
-  - id: phase1-backend-init
+  - id: p1-backend-init
     content: "Phase 1.1: 初始化后端 FastAPI 项目骨架, 创建 main.py / config.py / database.py, 编写 requirements.txt"
+    status: completed
+  - id: p1-docker
+    content: "Phase 1.2: 编写 docker-compose.yml (PostgreSQL + Redis), 创建 .env 配置文件"
+    status: completed
+  - id: p1-db-models
+    content: "Phase 1.3: 创建 SQLAlchemy 数据模型 (User / Conversation / Message), 配置 Alembic 迁移"
+    status: completed
+  - id: p1-frontend-init
+    content: "Phase 1.4: 初始化 Next.js 前端项目, 配置 Tailwind CSS + shadcn/ui"
+    status: completed
+  - id: p1-health-check
+    content: "Phase 1.5: 实现前后端健康检查接口 (GET /api/health), 前端调通后端验证连通性"
+    status: completed
+  - id: p2-chat-ui
+    content: "Phase 2.1: 构建聊天界面核心组件 -- MessageBubble / MessageList / ChatInput (使用 Mock 数据)"
     status: pending
-  - id: phase1-docker
-    content: "Phase 1.2: 编写 docker-compose.yml 配置 PostgreSQL + Redis, 创建 .env 配置文件"
+  - id: p2-sidebar
+    content: "Phase 2.2: 构建侧栏 -- Sidebar / ConversationList, 对话列表管理 (Mock 数据)"
     status: pending
-  - id: phase1-db-models
-    content: "Phase 1.3: 创建 SQLAlchemy 数据模型 (User / Conversation / Message), 配置 Alembic 数据库迁移"
+  - id: p2-markdown
+    content: "Phase 2.3: 实现 MarkdownRenderer + 代码高亮 + 复制按钮"
     status: pending
-  - id: phase1-frontend-init
-    content: "Phase 1.4: 初始化 Next.js 前端项目, 配置 Tailwind CSS + shadcn/ui, 创建基础页面路由"
+  - id: p2-thinking
+    content: "Phase 2.4: 实现 ThinkingBlock 可折叠思考链组件 (Mock 数据展示)"
     status: pending
-  - id: phase2-auth-backend
-    content: "Phase 2.1: 实现后端认证 API (注册/登录/刷新Token/获取用户信息), JWT + bcrypt"
+  - id: p2-streaming
+    content: "Phase 2.5: 实现 StreamingText 流式打字效果 + 模拟流式 Mock"
     status: pending
-  - id: phase2-auth-frontend
-    content: "Phase 2.2: 实现前端登录/注册页面, authStore 状态管理, 路由守卫"
+  - id: p3-auth-backend
+    content: "Phase 3.1: 实现后端认证 API (注册/登录/刷新Token), JWT + bcrypt"
     status: pending
-  - id: phase3-llm-service
-    content: "Phase 3.1: 实现后端 LLM 服务 (单模型流式调用), 对话 CRUD API, 消息持久化"
+  - id: p3-auth-frontend
+    content: "Phase 3.2: 实现前端登录/注册页面, authStore, 路由守卫, 对接后端 API"
     status: pending
-  - id: phase3-stream-frontend
-    content: "Phase 3.2: 实现前端 SSE 流式解析, chatStore 状态管理, 基础聊天输入框"
+  - id: p4-llm-service
+    content: "Phase 4.1: 实现后端 LLM 服务 (单模型流式调用 + 思考链解析), 对话 CRUD API, 消息持久化"
     status: pending
-  - id: phase4-chat-ui
-    content: "Phase 4.1: 构建聊天界面 -- MessageBubble / MessageList / ChatInput 组件"
+  - id: p4-frontend-integrate
+    content: "Phase 4.2: 前端对接后端真实 API, 替换 Mock 数据, SSE 流式解析 + 思考链实时展示"
     status: pending
-  - id: phase4-sidebar
-    content: "Phase 4.2: 构建侧栏 -- Sidebar / ConversationList, 对话列表管理"
-    status: pending
-  - id: phase4-markdown
-    content: "Phase 4.3: 实现 MarkdownRenderer 组件, 代码高亮 + 复制按钮"
-    status: pending
-  - id: phase5-multi-model
+  - id: p5-multi-model
     content: "Phase 5: 实现多模型切换 -- 后端 LLM 路由器 + 模型配置 + GET /api/models + 前端 ModelSelector"
     status: pending
-  - id: phase6-web-search
+  - id: p6-web-search
     content: "Phase 6: 集成联网搜索 -- Tavily API 接入, 搜索结果注入 prompt, 前端搜索开关"
     status: pending
-  - id: phase7-polish
-    content: "Phase 7: 优化打磨 -- 自动标题生成、上下文窗口管理、错误处理、加载动画、响应式适配、深色模式"
+  - id: p7-polish
+    content: "Phase 7: 优化打磨 -- 自动标题、停止/重新生成、上下文管理、错误处理、响应式、深色模式"
     status: pending
 isProject: false
 ---
@@ -58,6 +67,7 @@ graph TD
         AuthPage[登录/注册页]
         ChatList[对话列表侧栏]
         MdRender[Markdown渲染]
+        ThinkBlock[思考链展示]
         ModelSwitch[模型切换器]
     end
 
@@ -76,8 +86,9 @@ graph TD
     subgraph llm_providers [LLM 提供商]
         OpenAI_API[OpenAI]
         DeepSeek_API[DeepSeek]
+        Qwen_API[Qwen]
         Zhipu_API[智谱AI]
-        OtherLLM[其他兼容OpenAI格式的API]
+        OtherLLM[其他兼容API]
     end
 
     UI -->|SSE流式请求| ChatAPI
@@ -86,6 +97,7 @@ graph TD
     ChatAPI --> SearchAPI
     LLMRouter --> OpenAI_API
     LLMRouter --> DeepSeek_API
+    LLMRouter --> Qwen_API
     LLMRouter --> Zhipu_API
     LLMRouter --> OtherLLM
     AuthAPI --> PostgreSQL
@@ -140,6 +152,7 @@ chat_bot/
 │   │   │   ├── ChatInput.tsx        # 输入框组件
 │   │   │   ├── MessageList.tsx      # 消息列表
 │   │   │   ├── MessageBubble.tsx    # 单条消息气泡
+│   │   │   ├── ThinkingBlock.tsx    # 可折叠思考链组件
 │   │   │   ├── ModelSelector.tsx    # 模型切换下拉
 │   │   │   └── StreamingText.tsx    # 流式打字效果
 │   │   ├── sidebar/
@@ -151,7 +164,8 @@ chat_bot/
 │   ├── lib/
 │   │   ├── api.ts               # API 请求封装
 │   │   ├── auth.ts              # 认证相关工具
-│   │   └── stream.ts            # SSE 流式解析
+│   │   ├── stream.ts            # SSE 流式解析
+│   │   └── mock-data.ts         # Mock 数据 (Phase 2 用)
 │   ├── stores/
 │   │   ├── chatStore.ts         # 对话状态
 │   │   └── authStore.ts         # 认证状态
@@ -177,7 +191,7 @@ chat_bot/
 │   │   │   ├── chat.py          # 对话CRUD + 发送消息
 │   │   │   └── models.py        # 可用模型列表
 │   │   ├── services/            # 业务逻辑
-│   │   │   ├── llm_service.py   # 多模型路由 + 流式调用
+│   │   │   ├── llm_service.py   # 多模型路由 + 流式调用 + 思考链解析
 │   │   │   ├── search_service.py# 联网搜索
 │   │   │   └── auth_service.py  # 认证逻辑
 │   │   ├── middleware/
@@ -194,10 +208,10 @@ chat_bot/
 
 ---
 
-## Phase 1: 基础设施搭建
+## Phase 1: 项目初始化 & 健康检查
 
-> **目标**: 前后端项目可启动, 数据库可连接, 开发环境就绪
-> **交付物**: 可运行的前后端空壳 + Docker 容器化的 PostgreSQL / Redis
+> **目标**: 前后端项目可启动, 数据库可连接, 前后端接口连通性验证通过
+> **交付物**: 可运行的前后端 + Docker 环境 + 健康检查接口跑通
 
 ### Phase 1.1 -- 后端项目初始化
 
@@ -219,7 +233,8 @@ chat_bot/
 - 创建 SQLAlchemy 模型:
   - `backend/app/models/user.py` -- users 表 (id, username, email, hashed_password, created_at)
   - `backend/app/models/conversation.py` -- conversations 表 (id, user_id, title, model, created_at, updated_at)
-  - `backend/app/models/message.py` -- messages 表 (id, conversation_id, role, content, created_at)
+  - `backend/app/models/message.py` -- messages 表 (id, conversation_id, role, content, reasoning_content, created_at)
+    - `reasoning_content` 字段: 存储思考链内容 (可为空)
 - 初始化 Alembic, 生成初始迁移脚本
 
 ### Phase 1.4 -- 前端项目初始化
@@ -229,14 +244,109 @@ chat_bot/
 - 创建基础页面路由骨架: `app/page.tsx`, `app/(auth)/login/page.tsx`, `app/chat/page.tsx`
 - 配置 `next.config.js` 代理后端 API (rewrites 到 `localhost:8000`)
 
+### Phase 1.5 -- 健康检查验证
+
+- 后端实现 `GET /api/health` 接口, 返回数据库 + Redis 连接状态:
+
+```python
+@router.get("/api/health")
+async def health_check(db: AsyncSession = Depends(get_db)):
+    db_ok = await check_db(db)
+    redis_ok = await check_redis()
+    return {"status": "ok", "database": db_ok, "redis": redis_ok}
+```
+
+- 前端创建一个临时健康检查页面, 调用 `/api/health` 并展示连接状态
+- 验证前后端 CORS 配置正确, 接口可正常调通
+- 验证通过后即可进入 Phase 2
+
 ---
 
-## Phase 2: 用户认证系统
+## Phase 2: 前端 UI 开发 (Mock 数据)
 
-> **目标**: 用户可以注册、登录, 受保护的 API 需要认证才能访问
-> **交付物**: 完整的注册/登录流程, JWT 认证中间件
+> **目标**: 用 Mock 数据构建完整的聊天 UI, 不依赖后端 API
+> **交付物**: 视觉完整的聊天界面 (消息气泡 + 侧栏 + Markdown + 思考链 + 流式模拟)
 
-### Phase 2.1 -- 后端认证 API
+### Phase 2.1 -- Mock 数据准备 & 聊天界面核心组件
+
+**Mock 数据 (`frontend/lib/mock-data.ts`):**
+
+```typescript
+export const mockConversations = [
+  { id: "1", title: "Python 排序算法", model: "deepseek-chat", updatedAt: "2026-03-21T10:00:00Z" },
+  { id: "2", title: "React Hooks 详解", model: "gpt-4o", updatedAt: "2026-03-20T15:30:00Z" },
+];
+
+export const mockMessages = [
+  { id: "1", role: "user", content: "请解释快速排序的原理" },
+  {
+    id: "2", role: "assistant",
+    reasoning_content: "用户问的是快速排序...需要从分治法的角度解释...选取pivot...",
+    content: "## 快速排序\n\n快速排序是一种**分治算法**...\n\n```python\ndef quicksort(arr):\n    ...\n```"
+  },
+];
+```
+
+**核心组件:**
+
+- `frontend/components/chat/MessageBubble.tsx` -- 单条消息气泡:
+  - 区分 user (右侧/深色背景) 和 assistant (左侧/浅色背景) 样式
+  - assistant 消息内嵌 MarkdownRenderer 渲染
+  - 如果有 `reasoning_content`, 在消息顶部显示 ThinkingBlock
+- `frontend/components/chat/MessageList.tsx` -- 消息列表, 自动滚动到底部
+- `frontend/components/chat/ChatInput.tsx` -- 输入框:
+  - 支持 Shift+Enter 换行, Enter 发送
+  - 发送中状态禁用输入
+  - textarea 自动增高
+- `frontend/app/chat/page.tsx` -- 新对话页面
+- `frontend/app/chat/[id]/page.tsx` -- 指定对话页面
+
+### Phase 2.2 -- 侧栏对话列表
+
+- `frontend/components/sidebar/Sidebar.tsx` -- 侧栏容器 (可折叠, 宽度约 260px)
+- `frontend/components/sidebar/ConversationList.tsx` -- 对话历史列表:
+  - 按时间分组 (今天 / 昨天 / 更早)
+  - 每项显示标题 + 模型标签
+  - hover 显示删除/重命名按钮
+- `frontend/app/chat/layout.tsx` -- 聊天页布局 (左侧栏 + 右侧聊天区)
+- 支持操作: 新建对话、删除对话、重命名对话、点击切换对话 (均操作 Mock 数据)
+- `frontend/stores/chatStore.ts` -- Zustand 对话状态 (conversations, messages, currentId, 先用 Mock 数据初始化)
+
+### Phase 2.3 -- Markdown 渲染 & 代码高亮
+
+- `frontend/components/markdown/MarkdownRenderer.tsx`:
+  - 使用 `react-markdown` + `remark-gfm` (支持表格、任务列表等)
+  - 使用 `rehype-highlight` 或 `react-syntax-highlighter` 实现代码块语法高亮
+  - 代码块增加「复制」按钮 (点击复制代码内容, 按钮文字变为 "已复制")
+  - 支持 LaTeX 公式渲染 (可选, 使用 `rehype-katex`)
+- 将 MarkdownRenderer 集成到 MessageBubble 中, AI 回复以 Markdown 格式渲染
+
+### Phase 2.4 -- 思考链可折叠组件
+
+- `frontend/components/chat/ThinkingBlock.tsx`:
+  - 默认折叠状态, 显示 "已深度思考 (展开)" 提示文字
+  - 点击展开后显示思考链全文 (灰色背景 + 较小字体 + 斜体)
+  - 展开/折叠带平滑过渡动画
+  - 流式输出阶段: 展开状态, 显示 "思考中..." + 实时更新思考内容
+  - 流式结束后: 自动折叠, 显示思考耗时 (如 "已深度思考 12秒")
+- 使用 Mock 数据验证折叠/展开效果
+
+### Phase 2.5 -- 流式打字效果 (模拟)
+
+- `frontend/components/chat/StreamingText.tsx`:
+  - 流式输出时文字逐步出现 + 末尾光标闪烁动画
+  - 输出完成后光标消失
+- 实现模拟流式输出: 将 Mock 消息按字符逐步输出, 验证打字效果和 Markdown 实时渲染
+- 此阶段可完整体验聊天 UI, 为后续对接真实 API 做准备
+
+---
+
+## Phase 3: 登录/注册开发
+
+> **目标**: 用户可以注册、登录, 受保护的路由需要认证
+> **交付物**: 完整的注册/登录流程, JWT 认证中间件, 路由守卫
+
+### Phase 3.1 -- 后端认证 API
 
 **API 端点:**
 
@@ -245,33 +355,34 @@ chat_bot/
 - `POST /api/auth/refresh` -- 刷新 Token
 - `GET /api/auth/me` -- 获取当前用户信息
 
-**实现要点:**
+**文件与实现:**
 
+- `backend/app/schemas/auth.py` -- 请求/响应 Pydantic 模型
+- `backend/app/services/auth_service.py` -- 认证业务逻辑
+- `backend/app/routers/auth.py` -- 路由注册
+- `backend/app/middleware/auth.py` -- JWT 验证依赖项 (`get_current_user`)
 - 密码使用 bcrypt 加盐哈希存储
 - JWT Token: access_token 有效期 30 分钟, refresh_token 有效期 7 天
 - refresh_token 存入 Redis, 支持主动注销
-- 创建 `backend/app/middleware/auth.py` -- JWT 验证依赖项
-- 创建 `backend/app/schemas/auth.py` -- 请求/响应 Pydantic 模型
-- 创建 `backend/app/services/auth_service.py` -- 认证业务逻辑
-- 创建 `backend/app/routers/auth.py` -- 路由注册
 
-### Phase 2.2 -- 前端认证页面
+### Phase 3.2 -- 前端登录/注册页面
 
-- 创建 `frontend/stores/authStore.ts` -- Zustand 认证状态 (user, token, login, logout, register)
-- 创建 `frontend/lib/api.ts` -- API 请求封装 (自动附加 JWT, 401 自动刷新 Token)
-- 创建 `frontend/app/(auth)/login/page.tsx` -- 登录页面 (用户名/邮箱 + 密码)
-- 创建 `frontend/app/(auth)/register/page.tsx` -- 注册页面
+- `frontend/stores/authStore.ts` -- Zustand 认证状态 (user, token, login, logout, register)
+- `frontend/lib/api.ts` -- API 请求封装 (自动附加 JWT, 401 自动刷新 Token)
+- `frontend/lib/auth.ts` -- 认证工具函数
+- `frontend/app/(auth)/login/page.tsx` -- 登录页面 (用户名/邮箱 + 密码, 表单验证)
+- `frontend/app/(auth)/register/page.tsx` -- 注册页面 (用户名 + 邮箱 + 密码 + 确认密码)
 - 实现路由守卫: 未登录时重定向到 /login, 已登录时重定向到 /chat
 - 前端将 token 存储在 httpOnly cookie 中 (防 XSS)
 
 ---
 
-## Phase 3: 核心对话功能
+## Phase 4: 后端核心对话功能 & 前端对接
 
-> **目标**: 用户可以发送消息并收到 AI 的流式回复, 对话可持久化
-> **交付物**: 单模型可用的端到端对话链路 (含 SSE 流式输出)
+> **目标**: 前端对接真实后端 API, 支持 LLM 流式输出 + 思考链实时展示
+> **交付物**: 端到端可用的对话系统 (单模型, 含思考链)
 
-### Phase 3.1 -- 后端对话 API + LLM 服务
+### Phase 4.1 -- 后端对话 API + LLM 服务
 
 **对话 CRUD API:**
 
@@ -287,29 +398,35 @@ chat_bot/
 
 **LLM 服务 (`backend/app/services/llm_service.py`):**
 
-```python
-from fastapi.responses import StreamingResponse
+- 先接入单个支持思考链的模型 (如 DeepSeek-R1 或 Qwen), 使用 openai SDK + `base_url`
+- 流式 SSE 事件格式区分思考链与正文:
 
-async def stream_chat(conversation_id, user_message, model):
-    async def event_generator():
-        async for chunk in llm_service.stream_completion(messages, model):
-            yield f"data: {json.dumps({'content': chunk})}\n\n"
-        yield "data: [DONE]\n\n"
-    return StreamingResponse(event_generator(), media_type="text/event-stream")
+```python
+async def event_generator():
+    async for chunk in client.chat.completions.create(
+        model=model_name, messages=messages, stream=True
+    ):
+        delta = chunk.choices[0].delta
+        if hasattr(delta, 'reasoning_content') and delta.reasoning_content:
+            yield f"data: {json.dumps({'type': 'thinking', 'content': delta.reasoning_content})}\n\n"
+        if delta.content:
+            yield f"data: {json.dumps({'type': 'content', 'content': delta.content})}\n\n"
+    yield "data: [DONE]\n\n"
 ```
 
-**实现要点:**
-
-- 先接入单个 LLM (如 DeepSeek), 使用 openai SDK + `base_url` 参数
-- 用户消息立即入库, AI 回复在流式输出完成后整条入库
+- 用户消息立即入库, AI 回复 (content + reasoning_content) 在流式输出完成后入库
 - 上下文窗口: 取最近 20 条消息作为上下文
 
-### Phase 3.2 -- 前端流式对话
+### Phase 4.2 -- 前端对接真实 API
 
-- 创建 `frontend/lib/stream.ts` -- SSE 流式解析工具
+- 创建 `frontend/lib/stream.ts` -- SSE 流式解析, 区分 `thinking` 和 `content` 事件:
 
 ```typescript
-export async function streamChat(conversationId: string, message: string) {
+export async function streamChat(conversationId: string, message: string, callbacks: {
+  onThinking: (text: string) => void;
+  onContent: (text: string) => void;
+  onDone: () => void;
+}) {
   const response = await fetch(`/api/conversations/${conversationId}/messages`, {
     method: 'POST',
     body: JSON.stringify({ content: message }),
@@ -319,46 +436,23 @@ export async function streamChat(conversationId: string, message: string) {
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;
-    const text = decoder.decode(value);
-    // 解析 SSE data 行, 逐步更新 UI
+    const lines = decoder.decode(value).split('\n');
+    for (const line of lines) {
+      if (!line.startsWith('data: ')) continue;
+      const data = line.slice(6);
+      if (data === '[DONE]') { callbacks.onDone(); return; }
+      const parsed = JSON.parse(data);
+      if (parsed.type === 'thinking') callbacks.onThinking(parsed.content);
+      if (parsed.type === 'content') callbacks.onContent(parsed.content);
+    }
   }
 }
 ```
 
-- 创建 `frontend/stores/chatStore.ts` -- Zustand 对话状态 (conversations, messages, currentConversation, sendMessage)
-- 创建简单的 ChatInput 组件, 验证端到端流式通信可用
-
----
-
-## Phase 4: 前端 UI 完善
-
-> **目标**: 构建完整的、美观的聊天界面, 接近 ChatGPT 的体验
-> **交付物**: 完整的对话 UI (消息气泡 + 侧栏 + Markdown 渲染)
-
-### Phase 4.1 -- 聊天界面核心组件
-
-- `frontend/components/chat/MessageBubble.tsx` -- 单条消息气泡 (区分 user / assistant 样式)
-- `frontend/components/chat/MessageList.tsx` -- 消息列表, 自动滚动到底部
-- `frontend/components/chat/ChatInput.tsx` -- 输入框 (支持 Shift+Enter 换行, Enter 发送, 发送中禁用)
-- `frontend/components/chat/StreamingText.tsx` -- 流式打字效果 + 光标动画
-- `frontend/app/chat/page.tsx` -- 新对话页面
-- `frontend/app/chat/[id]/page.tsx` -- 指定对话页面
-
-### Phase 4.2 -- 侧栏对话列表
-
-- `frontend/components/sidebar/Sidebar.tsx` -- 侧栏容器 (可折叠)
-- `frontend/components/sidebar/ConversationList.tsx` -- 对话历史列表 (按时间分组: 今天/昨天/更早)
-- `frontend/app/chat/layout.tsx` -- 聊天页布局 (左侧栏 + 右侧聊天区)
-- 支持: 新建对话、删除对话、重命名对话、点击切换对话
-
-### Phase 4.3 -- Markdown 渲染 & 代码高亮
-
-- `frontend/components/markdown/MarkdownRenderer.tsx`:
-  - 使用 `react-markdown` + `remark-gfm` (支持表格、任务列表等)
-  - 使用 `rehype-highlight` 或 `react-syntax-highlighter` 实现代码块语法高亮
-  - 代码块增加「复制」按钮
-  - 支持 LaTeX 公式渲染 (可选, 使用 `rehype-katex`)
-- 将 MarkdownRenderer 集成到 MessageBubble 中, AI 回复以 Markdown 格式渲染
+- 更新 `chatStore.ts`: 替换 Mock 数据为真实 API 调用
+- 更新 ThinkingBlock: 流式阶段实时显示思考内容, 完成后自动折叠
+- 更新 MessageBubble: 从 API 返回的 `reasoning_content` 驱动思考链展示
+- 删除或保留 `mock-data.ts` (可作为开发调试用)
 
 ---
 
@@ -373,20 +467,25 @@ export async function streamChat(conversationId: string, message: string) {
 
 ```python
 MODELS = {
-    "gpt-4o": {"provider": "openai", "base_url": "https://api.openai.com/v1", "api_key": "..."},
-    "deepseek-chat": {"provider": "deepseek", "base_url": "https://api.deepseek.com", "api_key": "..."},
-    "glm-4-plus": {"provider": "zhipu", "base_url": "https://open.bigmodel.cn/api/paas/v4", "api_key": "..."},
+    "gpt-4o": {"provider": "openai", "base_url": "https://api.openai.com/v1", "api_key": "...", "supports_thinking": False},
+    "deepseek-reasoner": {"provider": "deepseek", "base_url": "https://api.deepseek.com", "api_key": "...", "supports_thinking": True},
+    "deepseek-chat": {"provider": "deepseek", "base_url": "https://api.deepseek.com", "api_key": "...", "supports_thinking": False},
+    "qwen-plus": {"provider": "qwen", "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1", "api_key": "...", "supports_thinking": True},
+    "glm-4-plus": {"provider": "zhipu", "base_url": "https://open.bigmodel.cn/api/paas/v4", "api_key": "...", "supports_thinking": False},
 }
 ```
 
-- 创建 `backend/app/routers/models.py` -- `GET /api/models` 返回可用模型列表
+- 创建 `backend/app/routers/models.py` -- `GET /api/models` 返回可用模型列表 (含 `supports_thinking` 标志)
 - 对话创建时绑定所选模型, 对话内可切换模型
 
 ### 前端
 
-- 创建 `frontend/components/chat/ModelSelector.tsx` -- 模型切换下拉菜单
-- 在 ChatInput 上方或侧栏中显示当前模型, 支持切换
+- 创建 `frontend/components/chat/ModelSelector.tsx` -- 模型切换下拉菜单:
+  - 显示模型名称 + 提供商图标
+  - 支持思考链的模型标注 "支持深度思考" 标签
+- 在 ChatInput 上方显示当前模型, 支持切换
 - 每个对话记录所使用的模型
+- ThinkingBlock 仅在模型 `supports_thinking=true` 时出现
 
 ---
 
@@ -411,8 +510,8 @@ async def search_web(query: str) -> str:
 
 ### 前端
 
-- 在 ChatInput 区域添加「联网搜索」开关按钮
-- AI 回复中引用的搜索来源以链接形式展示
+- 在 ChatInput 区域添加「联网搜索」开关按钮 (地球图标)
+- AI 回复中引用的搜索来源以链接卡片形式展示
 
 ---
 
@@ -425,20 +524,20 @@ async def search_web(query: str) -> str:
 
 - **自动标题生成**: 第一条消息发送后, 用 LLM 异步生成对话摘要标题
 - **上下文窗口管理**: 根据模型的 token 上限动态截断历史消息
-- **停止生成**: 用户可中途停止 AI 的流式输出
+- **停止生成**: 用户可中途停止 AI 的流式输出 (AbortController)
 - **重新生成**: 对 AI 的最后一条回复重新生成
 
 ### 体验优化
 
-- **加载动画**: 发送消息后显示 "AI 思考中" 动画
-- **错误处理**: 网络错误、API 限流、Token 过期等场景的友好提示
-- **响应式布局**: 移动端适配 (侧栏抽屉式展开)
+- **加载动画**: 发送消息后显示 "AI 思考中" 骨架屏/脉冲动画
+- **错误处理**: 网络错误、API 限流、Token 过期等场景的 Toast 友好提示
+- **响应式布局**: 移动端适配 (侧栏抽屉式展开, 底部输入框)
 - **深色模式**: 基于 Tailwind CSS dark mode 实现明/暗主题切换
 - **键盘快捷键**: Ctrl+N 新建对话, Ctrl+Shift+S 切换侧栏等
 
 ---
 
-## 数据流: 用户发送消息的完整链路
+## 数据流: 用户发送消息的完整链路 (含思考链)
 
 ```mermaid
 sequenceDiagram
@@ -459,13 +558,23 @@ sequenceDiagram
     end
 
     BE->>LLM: 流式请求 (带历史上下文)
-    loop 每个token
-        LLM-->>BE: 流式返回chunk
-        BE-->>FE: SSE data事件
-        FE-->>User: 实时渲染文字
+
+    opt 模型支持思考链
+        loop 思考token
+            LLM-->>BE: reasoning_content chunk
+            BE-->>FE: SSE type=thinking
+            FE-->>User: ThinkingBlock实时展示
+        end
     end
 
-    BE->>BE: 完整回复入库
+    loop 正文token
+        LLM-->>BE: content chunk
+        BE-->>FE: SSE type=content
+        FE-->>User: 实时渲染Markdown文字
+    end
+
+    BE->>BE: 完整回复入库 (content + reasoning_content)
+    FE->>FE: ThinkingBlock自动折叠
     FE->>User: 显示完成状态
 ```
 
@@ -479,32 +588,35 @@ gantt
     dateFormat X
     axisFormat %s
 
-    section Phase1
-    后端项目初始化          :p1a, 0, 1
-    Docker环境配置          :p1b, 0, 1
-    数据库模型与迁移        :p1c, after p1a, 1
-    前端项目初始化          :p1d, 0, 1
+    section Phase1_Init
+    后端初始化              :p1a, 0, 1
+    Docker环境              :p1b, 0, 1
+    数据库模型迁移          :p1c, after p1a, 1
+    前端初始化              :p1d, 0, 1
+    健康检查验证            :p1e, after p1c, 1
 
-    section Phase2
-    后端认证API             :p2a, after p1c, 1
-    前端认证页面            :p2b, after p1d, 1
+    section Phase2_FrontendUI
+    Mock数据与聊天组件      :p2a, after p1e, 2
+    侧栏对话列表            :p2b, after p1e, 1
+    Markdown渲染            :p2c, after p2a, 1
+    思考链组件              :p2d, after p2a, 1
+    流式打字效果            :p2e, after p2c, 1
 
-    section Phase3
-    后端对话API与LLM服务    :p3a, after p2a, 2
-    前端流式对话            :p3b, after p2b, 2
+    section Phase3_Auth
+    后端认证API             :p3a, after p2e, 1
+    前端登录注册            :p3b, after p2e, 1
 
-    section Phase4
-    聊天界面核心组件        :p4a, after p3b, 2
-    侧栏对话列表            :p4b, after p3b, 1
-    Markdown渲染            :p4c, after p4a, 1
+    section Phase4_Backend
+    后端对话API与LLM服务    :p4a, after p3a, 2
+    前端对接真实API         :p4b, after p3b, 2
 
-    section Phase5
-    多模型切换              :p5, after p4c, 1
+    section Phase5_MultiModel
+    多模型切换              :p5, after p4b, 1
 
-    section Phase6
+    section Phase6_Search
     联网搜索集成            :p6, after p5, 1
 
-    section Phase7
+    section Phase7_Polish
     优化打磨                :p7, after p6, 2
 ```
 
