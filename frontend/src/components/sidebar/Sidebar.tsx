@@ -1,7 +1,8 @@
 "use client";
 
-import { PanelLeftClose, PanelLeft, Plus } from "lucide-react";
+import { PanelLeftClose, PanelLeft, Plus, LogOut, User } from "lucide-react";
 import { useChatStore } from "@/stores/chatStore";
+import { useAuthStore } from "@/stores/authStore";
 import ConversationList from "./ConversationList";
 
 interface SidebarProps {
@@ -11,10 +12,15 @@ interface SidebarProps {
 
 export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
   const { addConversation, setCurrentId } = useChatStore();
+  const { user, logout } = useAuthStore();
 
   const handleNewChat = () => {
     const id = addConversation();
     setCurrentId(id);
+  };
+
+  const handleLogout = async () => {
+    await logout();
   };
 
   return (
@@ -41,6 +47,28 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
         </div>
 
         <ConversationList />
+
+        {user && (
+          <div className="mt-auto border-t border-gray-200 px-3 py-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+                  <User size={16} className="text-white" />
+                </div>
+                <span className="text-sm text-gray-700 font-medium truncate">
+                  {user.username}
+                </span>
+              </div>
+              <button
+                onClick={handleLogout}
+                title="退出登录"
+                className="p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-gray-200 transition-colors flex-shrink-0"
+              >
+                <LogOut size={16} />
+              </button>
+            </div>
+          </div>
+        )}
       </aside>
 
       {!isOpen && (

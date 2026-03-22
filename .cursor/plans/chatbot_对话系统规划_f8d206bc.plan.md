@@ -34,10 +34,10 @@ todos:
     status: completed
   - id: p3-auth-backend
     content: "Phase 3.1: 实现后端认证 API (注册/登录/刷新Token), JWT + bcrypt"
-    status: pending
+    status: completed
   - id: p3-auth-frontend
     content: "Phase 3.2: 实现前端登录/注册页面, authStore, 路由守卫, 对接后端 API"
-    status: pending
+    status: completed
   - id: p4-llm-service
     content: "Phase 4.1: 实现后端 LLM 服务 (单模型流式调用 + 思考链解析), 对话 CRUD API, 消息持久化"
     status: pending

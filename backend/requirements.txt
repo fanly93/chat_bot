@@ -10,3 +10,4 @@ redis[hiredis]
 pydantic-settings
 python-multipart
 httpx
+email-validator
