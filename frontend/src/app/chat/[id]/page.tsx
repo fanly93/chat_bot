@@ -3,8 +3,7 @@
 import { useEffect } from "react";
 import { useParams } from "next/navigation";
 import { useChatStore } from "@/stores/chatStore";
-import MessageList from "@/components/chat/MessageList";
-import ChatInput from "@/components/chat/ChatInput";
+import ChatArea from "@/components/chat/ChatArea";
 
 export default function ConversationPage() {
   const params = useParams();
@@ -15,10 +14,5 @@ export default function ConversationPage() {
     setCurrentId(id);
   }, [id, setCurrentId]);
 
-  return (
-    <>
-      <MessageList />
-      <ChatInput />
-    </>
-  );
+  return <ChatArea />;
 }

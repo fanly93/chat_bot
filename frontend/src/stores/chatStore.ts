@@ -1,6 +1,7 @@
 "use client";
 
 import { create } from "zustand";
+import { toast } from "sonner";
 import {
   type Conversation,
   type Message,
@@ -40,6 +41,7 @@ interface ChatState {
   setSelectedModel: (model: string) => void;
   toggleSearch: () => void;
   sendMessage: (content: string) => void;
+  regenerate: () => void;
   stopStreaming: () => void;
   reset: () => void;
 }
@@ -241,6 +243,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
         },
         onError: (error) => {
           console.error("Stream error:", error);
+          toast.error(error.message || "请求失败，请重试");
           const { streamingContent, streamingThinking, pendingSources } = get();
           if (streamingContent || streamingThinking) {
             const assistantMsg: Message = {
@@ -277,6 +280,34 @@ export const useChatStore = create<ChatState>((set, get) => ({
       enableSearch,
       selectedModel,
     );
+  },
+
+  regenerate: () => {
+    const { messages, currentId, isStreaming } = get();
+    if (isStreaming || !currentId) return;
+
+    // Find last user message content
+    let lastUserContent = "";
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].role === "user") {
+        lastUserContent = messages[i].content;
+        break;
+      }
+    }
+    if (!lastUserContent) return;
+
+    // Remove last assistant message from local state
+    const newMessages = [...messages];
+    for (let i = newMessages.length - 1; i >= 0; i--) {
+      if (newMessages[i].role === "assistant") {
+        newMessages.splice(i, 1);
+        break;
+      }
+    }
+    set({ messages: newMessages });
+
+    // Re-send with the same content
+    get().sendMessage(lastUserContent);
   },
 
   stopStreaming: () => {

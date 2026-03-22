@@ -29,7 +29,11 @@ function groupByDate(conversations: { id: string; updated_at: string }[]) {
   return groups.filter((g) => g.items.length > 0);
 }
 
-export default function ConversationList() {
+interface ConversationListProps {
+  onSelect?: () => void;
+}
+
+export default function ConversationList({ onSelect }: ConversationListProps) {
   const { conversations, currentId, setCurrentId, deleteConversation, renameConversation } =
     useChatStore();
   const router = useRouter();
@@ -54,7 +58,7 @@ export default function ConversationList() {
     <div className="flex-1 overflow-y-auto px-2 py-2">
       {groups.map((group) => (
         <div key={group.label} className="mb-4">
-          <p className="px-3 py-1 text-xs font-medium text-gray-400 uppercase">
+          <p className="px-3 py-1 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase">
             {group.label}
           </p>
           {group.items.map((conv) => {
@@ -66,12 +70,16 @@ export default function ConversationList() {
                 key={conv.id}
                 className={`group flex items-center gap-2 px-3 py-2.5 rounded-lg cursor-pointer mb-0.5 transition-colors ${
                   isActive
-                    ? "bg-gray-200 text-gray-900"
-                    : "text-gray-600 hover:bg-gray-100"
+                    ? "bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
                 }`}
-                onClick={() => { setCurrentId(conv.id); router.push(`/chat/${conv.id}`); }}
+                onClick={() => {
+                  setCurrentId(conv.id);
+                  router.push(`/chat/${conv.id}`);
+                  onSelect?.();
+                }}
               >
-                <MessageSquare size={16} className="flex-shrink-0 text-gray-400" />
+                <MessageSquare size={16} className="flex-shrink-0 text-gray-400 dark:text-gray-500" />
 
                 {editingId === conv.id ? (
                   <div className="flex-1 flex items-center gap-1">
@@ -79,7 +87,7 @@ export default function ConversationList() {
                       value={editTitle}
                       onChange={(e) => setEditTitle(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && confirmRename()}
-                      className="flex-1 px-1 py-0.5 text-sm bg-white border border-gray-300 rounded outline-none focus:border-blue-400"
+                      className="flex-1 px-1 py-0.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded outline-none focus:border-blue-400 text-gray-800 dark:text-gray-100"
                       autoFocus
                       onClick={(e) => e.stopPropagation()}
                     />
@@ -102,13 +110,13 @@ export default function ConversationList() {
                     <div className="hidden group-hover:flex items-center gap-0.5">
                       <button
                         onClick={(e) => { e.stopPropagation(); startRename(conv.id, full.title); }}
-                        className="p-1 rounded hover:bg-gray-300/50 text-gray-400 hover:text-gray-600"
+                        className="p-1 rounded hover:bg-gray-300/50 dark:hover:bg-gray-600 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
                       >
                         <Pencil size={13} />
                       </button>
                       <button
                         onClick={(e) => { e.stopPropagation(); deleteConversation(conv.id); }}
-                        className="p-1 rounded hover:bg-red-100 text-gray-400 hover:text-red-500"
+                        className="p-1 rounded hover:bg-red-100 dark:hover:bg-red-900/30 text-gray-400 hover:text-red-500"
                       >
                         <Trash2 size={13} />
                       </button>

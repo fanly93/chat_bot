@@ -52,7 +52,7 @@ todos:
     status: completed
   - id: p7-polish
     content: "Phase 7: 优化打磨 -- 自动标题、停止/重新生成、上下文管理、错误处理、响应式、深色模式"
-    status: pending
+    status: completed
 isProject: false
 ---
 

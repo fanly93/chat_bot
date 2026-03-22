@@ -6,11 +6,16 @@ import { Send, Square, Globe } from "lucide-react";
 import { useChatStore } from "@/stores/chatStore";
 import ModelSelector from "./ModelSelector";
 
-export default function ChatInput() {
+interface ChatInputProps {
+  variant?: "bottom" | "centered";
+}
+
+export default function ChatInput({ variant = "bottom" }: ChatInputProps) {
   const [input, setInput] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const router = useRouter();
-  const { sendMessage, isStreaming, stopStreaming, currentId, enableSearch, toggleSearch, isSearching } = useChatStore();
+  const { sendMessage, isStreaming, stopStreaming, currentId, enableSearch, toggleSearch, isSearching } =
+    useChatStore();
 
   const adjustHeight = useCallback(() => {
     const textarea = textareaRef.current;
@@ -52,9 +57,18 @@ export default function ChatInput() {
     }
   };
 
+  const isCentered = variant === "centered";
+
   return (
-    <div className="border-t border-gray-200 bg-white px-4 py-3">
-      <div className="max-w-3xl mx-auto">
+    <div
+      className={
+        isCentered
+          ? "w-full"
+          : "border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-4 py-3"
+      }
+    >
+      <div className={isCentered ? "w-full" : "max-w-3xl mx-auto"}>
+        {/* Toolbar: ModelSelector + Search toggle */}
         <div className="flex items-center justify-between mb-2">
           <ModelSelector disabled={isStreaming} />
           <button
@@ -63,15 +77,17 @@ export default function ChatInput() {
             title={enableSearch ? "关闭联网搜索" : "开启联网搜索"}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all disabled:opacity-50 ${
               enableSearch
-                ? "bg-blue-100 text-blue-700 border border-blue-300"
-                : "bg-gray-100 text-gray-500 border border-gray-200 hover:bg-gray-200"
+                ? "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-300 dark:border-blue-600"
+                : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-600"
             }`}
           >
             <Globe size={13} className={isSearching ? "animate-spin" : ""} />
             <span>{isSearching ? "搜索中..." : "联网搜索"}</span>
           </button>
         </div>
-        <div className="flex items-end gap-2 bg-gray-50 rounded-2xl border border-gray-200 px-4 py-2 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
+
+        {/* Textarea + Send button */}
+        <div className="flex items-end gap-2 bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-600 px-4 py-2 focus-within:border-blue-400 dark:focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 dark:focus-within:ring-blue-900/50 transition-all">
           <textarea
             ref={textareaRef}
             value={input}
@@ -80,7 +96,7 @@ export default function ChatInput() {
             placeholder="输入消息... (Shift+Enter 换行)"
             rows={1}
             disabled={isStreaming}
-            className="flex-1 resize-none bg-transparent outline-none text-gray-800 placeholder-gray-400 py-1.5 max-h-[200px] disabled:opacity-50"
+            className="flex-1 resize-none bg-transparent outline-none text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 py-1.5 max-h-[200px] disabled:opacity-50"
           />
 
           {isStreaming ? (
@@ -102,7 +118,8 @@ export default function ChatInput() {
             </button>
           )}
         </div>
-        <p className="text-xs text-gray-400 text-center mt-2">
+
+        <p className="text-xs text-gray-400 dark:text-gray-500 text-center mt-2">
           AI 可能会犯错，请核查重要信息
         </p>
       </div>

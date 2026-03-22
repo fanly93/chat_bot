@@ -1,13 +1,7 @@
 "use client";
 
-import MessageList from "@/components/chat/MessageList";
-import ChatInput from "@/components/chat/ChatInput";
+import ChatArea from "@/components/chat/ChatArea";
 
 export default function ChatPage() {
-  return (
-    <>
-      <MessageList />
-      <ChatInput />
-    </>
-  );
+  return <ChatArea />;
 }

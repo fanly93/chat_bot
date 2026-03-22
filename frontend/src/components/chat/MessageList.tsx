@@ -3,12 +3,10 @@
 import { useEffect, useRef } from "react";
 import { useChatStore } from "@/stores/chatStore";
 import MessageBubble from "./MessageBubble";
-import { MessageSquarePlus } from "lucide-react";
 
 export default function MessageList() {
   const {
     messages,
-    currentId,
     isStreaming,
     streamingContent,
     streamingThinking,
@@ -22,28 +20,25 @@ export default function MessageList() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, streamingContent, streamingThinking]);
 
-  if (!currentId) {
-    return (
-      <div className="flex-1 flex flex-col items-center justify-center text-gray-400 gap-4">
-        <MessageSquarePlus size={48} strokeWidth={1.5} />
-        <div className="text-center">
-          <h2 className="text-xl font-semibold text-gray-600 mb-2">开始新对话</h2>
-          <p className="text-sm">在下方输入消息，开始与 AI 助手对话</p>
-        </div>
-      </div>
-    );
-  }
+  // Index of last assistant message (for regenerate button)
+  const lastAssistantIdx = (() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].role === "assistant") return i;
+    }
+    return -1;
+  })();
 
   return (
-    <div className="flex-1 overflow-y-auto">
-      <div className="max-w-3xl mx-auto divide-y divide-gray-100">
-        {messages.map((msg) => (
+    <div className="flex-1 overflow-y-auto bg-white dark:bg-gray-900">
+      <div className="max-w-3xl mx-auto divide-y divide-gray-100 dark:divide-gray-800">
+        {messages.map((msg, idx) => (
           <MessageBubble
             key={msg.id}
             role={msg.role}
             content={msg.content}
             reasoning_content={msg.reasoning_content}
             sources={msg.sources}
+            isLastAssistant={!isStreaming && idx === lastAssistantIdx && msg.role === "assistant"}
           />
         ))}
 
