@@ -10,13 +10,19 @@ export default function ChatLayout({
   children: React.ReactNode;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const { loadConversations, conversationsLoaded } = useChatStore();
+  const { loadConversations, conversationsLoaded, loadModels, models } = useChatStore();
 
   useEffect(() => {
     if (!conversationsLoaded) {
       loadConversations();
     }
   }, [loadConversations, conversationsLoaded]);
+
+  useEffect(() => {
+    if (models.length === 0) {
+      loadModels();
+    }
+  }, [loadModels, models.length]);
 
   return (
     <div className="h-screen flex relative overflow-hidden">

@@ -145,7 +145,7 @@ async def send_message(
     ]
     context.append({"role": "user", "content": req.content})
 
-    collected = {"reasoning_content": "", "content": ""}
+    collected = {"reasoning_content": "", "content": "", "has_error": False}
     user_content = req.content
     conv_id = conv.id
     conv_title = conv.title
@@ -161,6 +161,8 @@ async def send_message(
                     if data.get("type") == "done":
                         collected["reasoning_content"] = data.get("reasoning_content", "")
                         collected["content"] = data.get("content", "")
+                    elif data.get("type") == "error":
+                        collected["has_error"] = True
                 except Exception:
                     pass
 
@@ -170,13 +172,17 @@ async def send_message(
         async for event in event_generator():
             yield event
 
+        # 出错时不保存空的 assistant 消息
+        if collected["has_error"] and not collected["content"]:
+            return
+
         new_title = None
 
         async with async_session() as save_db:
             assistant_msg = Message(
                 conversation_id=conv_id,
                 role="assistant",
-                content=collected["content"],
+                content=collected["content"] or "",
                 reasoning_content=collected["reasoning_content"] or None,
             )
             save_db.add(assistant_msg)

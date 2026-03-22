@@ -4,6 +4,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Send, Square } from "lucide-react";
 import { useChatStore } from "@/stores/chatStore";
+import ModelSelector from "./ModelSelector";
 
 export default function ChatInput() {
   const [input, setInput] = useState("");
@@ -54,6 +55,9 @@ export default function ChatInput() {
   return (
     <div className="border-t border-gray-200 bg-white px-4 py-3">
       <div className="max-w-3xl mx-auto">
+        <div className="flex items-center mb-2">
+          <ModelSelector disabled={isStreaming} />
+        </div>
         <div className="flex items-end gap-2 bg-gray-50 rounded-2xl border border-gray-200 px-4 py-2 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
           <textarea
             ref={textareaRef}

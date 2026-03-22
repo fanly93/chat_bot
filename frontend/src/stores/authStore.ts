@@ -2,6 +2,7 @@
 
 import { create } from "zustand";
 import { apiLogin, apiRegister, apiGetMe, apiLogout, clearTokens } from "@/lib/api";
+import { useChatStore } from "@/stores/chatStore";
 
 interface User {
   id: string;
@@ -44,6 +45,8 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   login: async (username, password) => {
     set({ loading: true });
+    // 登录前先清除上一个用户的对话状态，防止不同账号间共享历史
+    useChatStore.getState().reset();
     try {
       await apiLogin(username, password);
       const user = await apiGetMe();
@@ -56,6 +59,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   register: async (username, email, password) => {
     set({ loading: true });
+    useChatStore.getState().reset();
     try {
       await apiRegister(username, email, password);
       const user = await apiGetMe();
@@ -70,6 +74,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       await apiLogout();
     } finally {
+      useChatStore.getState().reset();
       set({ user: null });
     }
   },

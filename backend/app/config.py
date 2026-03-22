@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
     OPENAI_API_KEY: str = ""
+    OPENAI_BASE_URL: str = "https://api.openai.com/v1"
     DEEPSEEK_API_KEY: str = ""
     QWEN_API_KEY: str = ""
     ZHIPU_API_KEY: str = ""

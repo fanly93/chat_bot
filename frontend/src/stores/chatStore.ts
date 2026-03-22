@@ -4,12 +4,14 @@ import { create } from "zustand";
 import {
   type Conversation,
   type Message,
+  type Model,
   apiListConversations,
   apiCreateConversation,
   apiGetConversation,
   apiDeleteConversation,
   apiUpdateConversation,
   apiStreamMessage,
+  apiGetModels,
 } from "@/lib/api";
 
 interface ChatState {
@@ -21,15 +23,20 @@ interface ChatState {
   streamingThinking: string;
   isThinkingPhase: boolean;
   conversationsLoaded: boolean;
+  models: Model[];
+  selectedModel: string;
 
   loadConversations: () => Promise<void>;
+  loadModels: () => Promise<void>;
   setCurrentId: (id: string | null) => void;
   loadMessages: (conversationId: string) => Promise<void>;
   addConversation: () => Promise<string>;
   deleteConversation: (id: string) => Promise<void>;
   renameConversation: (id: string, title: string) => Promise<void>;
+  setSelectedModel: (model: string) => void;
   sendMessage: (content: string) => void;
   stopStreaming: () => void;
+  reset: () => void;
 }
 
 let abortController: AbortController | null = null;
@@ -43,6 +50,17 @@ export const useChatStore = create<ChatState>((set, get) => ({
   streamingThinking: "",
   isThinkingPhase: false,
   conversationsLoaded: false,
+  models: [],
+  selectedModel: "deepseek-chat",
+
+  loadModels: async () => {
+    try {
+      const models = await apiGetModels();
+      set({ models });
+    } catch {
+      // 加载失败时保持默认列表，静默处理
+    }
+  },
 
   loadConversations: async () => {
     try {
@@ -68,20 +86,44 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   addConversation: async () => {
-    const { conversations } = get();
+    const { conversations, selectedModel } = get();
     const emptyConv = conversations.find((c) => c.title === "新对话");
     if (emptyConv) {
+      // 如果当前选中模型与已有空对话的模型不同，更新模型
+      if (emptyConv.model !== selectedModel) {
+        await apiUpdateConversation(emptyConv.id, { model: selectedModel });
+        set((s) => ({
+          conversations: s.conversations.map((c) =>
+            c.id === emptyConv.id ? { ...c, model: selectedModel } : c
+          ),
+        }));
+      }
       set({ currentId: emptyConv.id, messages: [] });
       return emptyConv.id;
     }
 
-    const conv = await apiCreateConversation();
+    const conv = await apiCreateConversation("新对话", selectedModel);
     set((s) => ({
       conversations: [conv, ...s.conversations],
       currentId: conv.id,
       messages: [],
     }));
     return conv.id;
+  },
+
+  setSelectedModel: (model) => {
+    set({ selectedModel: model });
+    // 同步更新当前空对话的模型
+    const { conversations, currentId } = get();
+    const current = conversations.find((c) => c.id === currentId);
+    if (current && current.title === "新对话") {
+      apiUpdateConversation(current.id, { model }).catch(() => {});
+      set((s) => ({
+        conversations: s.conversations.map((c) =>
+          c.id === currentId ? { ...c, model } : c
+        ),
+      }));
+    }
   },
 
   deleteConversation: async (id) => {
@@ -224,5 +266,22 @@ export const useChatStore = create<ChatState>((set, get) => ({
         isThinkingPhase: false,
       }));
     }
+  },
+
+  reset: () => {
+    if (abortController) {
+      abortController.abort();
+      abortController = null;
+    }
+    set({
+      conversations: [],
+      currentId: null,
+      messages: [],
+      isStreaming: false,
+      streamingContent: "",
+      streamingThinking: "",
+      isThinkingPhase: false,
+      conversationsLoaded: false,
+    });
   },
 }));

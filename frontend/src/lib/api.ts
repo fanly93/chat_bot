@@ -130,6 +130,20 @@ export async function apiLogout() {
   }
 }
 
+// ---- Models API ----
+
+export interface Model {
+  id: string;
+  display_name: string;
+  description: string;
+  provider: "openai" | "deepseek" | "qwen" | "zhipu";
+  supports_thinking: boolean;
+}
+
+export async function apiGetModels() {
+  return apiFetch<Model[]>("/models", { skipAuth: true });
+}
+
 // ---- Conversation API ----
 
 export interface Conversation {
@@ -245,6 +259,8 @@ export async function apiStreamMessage(
             callbacks.onDone(data.reasoning_content || "", data.content || "");
           } else if (data.type === "title_generated") {
             callbacks.onTitleGenerated?.(data.title);
+          } else if (data.type === "error") {
+            callbacks.onError(new Error(data.message || "模型调用失败"));
           }
         } catch {
           // skip malformed JSON

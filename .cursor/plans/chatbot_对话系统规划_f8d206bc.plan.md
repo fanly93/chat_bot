@@ -46,7 +46,7 @@ todos:
     status: completed
   - id: p5-multi-model
     content: "Phase 5: 实现多模型切换 -- 后端 LLM 路由器 + 模型配置 + GET /api/models + 前端 ModelSelector"
-    status: pending
+    status: completed
   - id: p6-web-search
     content: "Phase 6: 集成联网搜索 -- Tavily API 接入, 搜索结果注入 prompt, 前端搜索开关"
     status: pending
