@@ -40,10 +40,10 @@ todos:
     status: completed
   - id: p4-llm-service
     content: "Phase 4.1: 实现后端 LLM 服务 (单模型流式调用 + 思考链解析), 对话 CRUD API, 消息持久化"
-    status: pending
+    status: completed
   - id: p4-frontend-integrate
     content: "Phase 4.2: 前端对接后端真实 API, 替换 Mock 数据, SSE 流式解析 + 思考链实时展示"
-    status: pending
+    status: completed
   - id: p5-multi-model
     content: "Phase 5: 实现多模型切换 -- 后端 LLM 路由器 + 模型配置 + GET /api/models + 前端 ModelSelector"
     status: pending

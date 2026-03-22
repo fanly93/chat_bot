@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { PanelLeftClose, PanelLeft, Plus, LogOut, User } from "lucide-react";
 import { useChatStore } from "@/stores/chatStore";
 import { useAuthStore } from "@/stores/authStore";
@@ -11,12 +12,17 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
-  const { addConversation, setCurrentId } = useChatStore();
+  const { addConversation } = useChatStore();
   const { user, logout } = useAuthStore();
+  const router = useRouter();
 
-  const handleNewChat = () => {
-    const id = addConversation();
-    setCurrentId(id);
+  const handleNewChat = async () => {
+    try {
+      const id = await addConversation();
+      router.push(`/chat/${id}`);
+    } catch (e) {
+      console.error("Failed to create conversation:", e);
+    }
   };
 
   const handleLogout = async () => {

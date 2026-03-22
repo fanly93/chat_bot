@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Sidebar from "@/components/sidebar/Sidebar";
+import { useChatStore } from "@/stores/chatStore";
 
 export default function ChatLayout({
   children,
@@ -9,6 +10,13 @@ export default function ChatLayout({
   children: React.ReactNode;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const { loadConversations, conversationsLoaded } = useChatStore();
+
+  useEffect(() => {
+    if (!conversationsLoaded) {
+      loadConversations();
+    }
+  }, [loadConversations, conversationsLoaded]);
 
   return (
     <div className="h-screen flex relative overflow-hidden">

@@ -4,11 +4,13 @@ import { create } from "zustand";
 import {
   type Conversation,
   type Message,
-  mockConversations,
-  mockMessagesMap,
-  streamingMockContent,
-  streamingMockThinking,
-} from "@/lib/mock-data";
+  apiListConversations,
+  apiCreateConversation,
+  apiGetConversation,
+  apiDeleteConversation,
+  apiUpdateConversation,
+  apiStreamMessage,
+} from "@/lib/api";
 
 interface ChatState {
   conversations: Conversation[];
@@ -18,68 +20,87 @@ interface ChatState {
   streamingContent: string;
   streamingThinking: string;
   isThinkingPhase: boolean;
+  conversationsLoaded: boolean;
 
+  loadConversations: () => Promise<void>;
   setCurrentId: (id: string | null) => void;
-  loadMessages: (conversationId: string) => void;
-  addConversation: () => string;
-  deleteConversation: (id: string) => void;
-  renameConversation: (id: string, title: string) => void;
+  loadMessages: (conversationId: string) => Promise<void>;
+  addConversation: () => Promise<string>;
+  deleteConversation: (id: string) => Promise<void>;
+  renameConversation: (id: string, title: string) => Promise<void>;
   sendMessage: (content: string) => void;
   stopStreaming: () => void;
 }
 
-let streamTimer: ReturnType<typeof setTimeout> | null = null;
+let abortController: AbortController | null = null;
 
 export const useChatStore = create<ChatState>((set, get) => ({
-  conversations: mockConversations,
+  conversations: [],
   currentId: null,
   messages: [],
   isStreaming: false,
   streamingContent: "",
   streamingThinking: "",
   isThinkingPhase: false,
+  conversationsLoaded: false,
+
+  loadConversations: async () => {
+    try {
+      const conversations = await apiListConversations();
+      set({ conversations, conversationsLoaded: true });
+    } catch {
+      set({ conversationsLoaded: true });
+    }
+  },
 
   setCurrentId: (id) => {
-    set({ currentId: id });
+    set({ currentId: id, messages: [] });
     if (id) get().loadMessages(id);
-    else set({ messages: [] });
   },
 
-  loadMessages: (conversationId) => {
-    const msgs = mockMessagesMap[conversationId] || [];
-    set({ messages: msgs });
+  loadMessages: async (conversationId) => {
+    try {
+      const detail = await apiGetConversation(conversationId);
+      set({ messages: detail.messages });
+    } catch {
+      set({ messages: [] });
+    }
   },
 
-  addConversation: () => {
-    const id = Date.now().toString();
-    const newConv: Conversation = {
-      id,
-      title: "新对话",
-      model: "deepseek-chat",
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
+  addConversation: async () => {
+    const { conversations } = get();
+    const emptyConv = conversations.find((c) => c.title === "新对话");
+    if (emptyConv) {
+      set({ currentId: emptyConv.id, messages: [] });
+      return emptyConv.id;
+    }
+
+    const conv = await apiCreateConversation();
     set((s) => ({
-      conversations: [newConv, ...s.conversations],
-      currentId: id,
+      conversations: [conv, ...s.conversations],
+      currentId: conv.id,
       messages: [],
     }));
-    return id;
+    return conv.id;
   },
 
-  deleteConversation: (id) => {
+  deleteConversation: async (id) => {
+    await apiDeleteConversation(id);
     set((s) => {
       const filtered = s.conversations.filter((c) => c.id !== id);
       const nextId = s.currentId === id ? (filtered[0]?.id ?? null) : s.currentId;
       return {
         conversations: filtered,
         currentId: nextId,
-        messages: nextId ? (mockMessagesMap[nextId] || []) : [],
+        messages: nextId === s.currentId ? s.messages : [],
       };
     });
+    const { currentId } = get();
+    if (currentId) get().loadMessages(currentId);
   },
 
-  renameConversation: (id, title) => {
+  renameConversation: async (id, title) => {
+    await apiUpdateConversation(id, { title });
     set((s) => ({
       conversations: s.conversations.map((c) =>
         c.id === id ? { ...c, title } : c
@@ -87,17 +108,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }));
   },
 
-  sendMessage: (content) => {
+  sendMessage: async (content) => {
     const { currentId, isStreaming } = get();
-    if (isStreaming) return;
+    if (isStreaming || !currentId) return;
 
-    let convId = currentId;
-    if (!convId) {
-      convId = get().addConversation();
-    }
+    const convId = currentId;
 
     const userMsg: Message = {
-      id: `msg-${Date.now()}`,
+      id: `temp-${Date.now()}`,
       role: "user",
       content,
       created_at: new Date().toISOString(),
@@ -109,57 +127,85 @@ export const useChatStore = create<ChatState>((set, get) => ({
       streamingContent: "",
       streamingThinking: "",
       isThinkingPhase: true,
-      conversations: s.conversations.map((c) =>
-        c.id === convId
-          ? { ...c, title: s.messages.length === 0 ? content.slice(0, 30) : c.title, updated_at: new Date().toISOString() }
-          : c
-      ),
     }));
 
-    let thinkIdx = 0;
-    let contentIdx = 0;
+    abortController = new AbortController();
 
-    const streamThinking = () => {
-      if (thinkIdx < streamingMockThinking.length) {
-        thinkIdx += Math.floor(Math.random() * 3) + 1;
-        set({ streamingThinking: streamingMockThinking.slice(0, thinkIdx) });
-        streamTimer = setTimeout(streamThinking, 20 + Math.random() * 30);
-      } else {
-        set({ isThinkingPhase: false });
-        streamTimer = setTimeout(streamContent, 300);
-      }
-    };
-
-    const streamContent = () => {
-      if (contentIdx < streamingMockContent.length) {
-        contentIdx += Math.floor(Math.random() * 3) + 1;
-        set({ streamingContent: streamingMockContent.slice(0, contentIdx) });
-        streamTimer = setTimeout(streamContent, 15 + Math.random() * 25);
-      } else {
-        const assistantMsg: Message = {
-          id: `msg-${Date.now()}`,
-          role: "assistant",
-          content: streamingMockContent,
-          reasoning_content: streamingMockThinking,
-          created_at: new Date().toISOString(),
-        };
-        set((s) => ({
-          messages: [...s.messages, assistantMsg],
-          isStreaming: false,
-          streamingContent: "",
-          streamingThinking: "",
-          isThinkingPhase: false,
-        }));
-      }
-    };
-
-    streamTimer = setTimeout(streamThinking, 500);
+    await apiStreamMessage(
+      convId!,
+      content,
+      {
+        onThinking: (text) => {
+          set((s) => ({ streamingThinking: s.streamingThinking + text }));
+        },
+        onContent: (text) => {
+          const { isThinkingPhase } = get();
+          if (isThinkingPhase) {
+            set({ isThinkingPhase: false });
+          }
+          set((s) => ({ streamingContent: s.streamingContent + text }));
+        },
+        onDone: (reasoning_content, finalContent) => {
+          const assistantMsg: Message = {
+            id: `msg-${Date.now()}`,
+            role: "assistant",
+            content: finalContent,
+            reasoning_content: reasoning_content || undefined,
+            created_at: new Date().toISOString(),
+          };
+          set((s) => ({
+            messages: [...s.messages, assistantMsg],
+            isStreaming: false,
+            streamingContent: "",
+            streamingThinking: "",
+            isThinkingPhase: false,
+          }));
+          abortController = null;
+        },
+        onTitleGenerated: (title) => {
+          set((s) => ({
+            conversations: s.conversations.map((c) =>
+              c.id === convId ? { ...c, title } : c
+            ),
+          }));
+        },
+        onError: (error) => {
+          console.error("Stream error:", error);
+          const { streamingContent, streamingThinking } = get();
+          if (streamingContent || streamingThinking) {
+            const assistantMsg: Message = {
+              id: `msg-${Date.now()}`,
+              role: "assistant",
+              content: streamingContent || "（生成出错）",
+              reasoning_content: streamingThinking || undefined,
+              created_at: new Date().toISOString(),
+            };
+            set((s) => ({
+              messages: [...s.messages, assistantMsg],
+              isStreaming: false,
+              streamingContent: "",
+              streamingThinking: "",
+              isThinkingPhase: false,
+            }));
+          } else {
+            set({
+              isStreaming: false,
+              streamingContent: "",
+              streamingThinking: "",
+              isThinkingPhase: false,
+            });
+          }
+          abortController = null;
+        },
+      },
+      abortController.signal,
+    );
   },
 
   stopStreaming: () => {
-    if (streamTimer) {
-      clearTimeout(streamTimer);
-      streamTimer = null;
+    if (abortController) {
+      abortController.abort();
+      abortController = null;
     }
     const { streamingContent, streamingThinking } = get();
     if (streamingContent || streamingThinking) {

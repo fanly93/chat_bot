@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useChatStore } from "@/stores/chatStore";
 import { MessageSquare, Trash2, Pencil, Check, X } from "lucide-react";
 
@@ -31,6 +32,7 @@ function groupByDate(conversations: { id: string; updated_at: string }[]) {
 export default function ConversationList() {
   const { conversations, currentId, setCurrentId, deleteConversation, renameConversation } =
     useChatStore();
+  const router = useRouter();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
 
@@ -41,9 +43,9 @@ export default function ConversationList() {
     setEditTitle(title);
   };
 
-  const confirmRename = () => {
+  const confirmRename = async () => {
     if (editingId && editTitle.trim()) {
-      renameConversation(editingId, editTitle.trim());
+      await renameConversation(editingId, editTitle.trim());
     }
     setEditingId(null);
   };
@@ -67,7 +69,7 @@ export default function ConversationList() {
                     ? "bg-gray-200 text-gray-900"
                     : "text-gray-600 hover:bg-gray-100"
                 }`}
-                onClick={() => setCurrentId(conv.id)}
+                onClick={() => { setCurrentId(conv.id); router.push(`/chat/${conv.id}`); }}
               >
                 <MessageSquare size={16} className="flex-shrink-0 text-gray-400" />
 

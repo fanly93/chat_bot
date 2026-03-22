@@ -7,7 +7,7 @@ import ThinkingBlock from "./ThinkingBlock";
 interface MessageBubbleProps {
   role: "user" | "assistant" | "system";
   content: string;
-  reasoning_content?: string;
+  reasoning_content?: string | null;
   isStreaming?: boolean;
   isThinkingPhase?: boolean;
   streamingThinking?: string;

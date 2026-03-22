@@ -1,4 +1,5 @@
 const API_BASE = "/api";
+const BACKEND_BASE = "http://localhost:8000/api";
 
 interface FetchOptions extends RequestInit {
   skipAuth?: boolean;
@@ -79,6 +80,10 @@ export async function apiFetch<T = unknown>(
     throw new Error(body.detail || `请求失败 (${res.status})`);
   }
 
+  if (res.status === 204) {
+    return undefined as T;
+  }
+
   return res.json();
 }
 
@@ -122,5 +127,133 @@ export async function apiLogout() {
     await apiFetch("/auth/logout", { method: "POST" });
   } finally {
     clearTokens();
+  }
+}
+
+// ---- Conversation API ----
+
+export interface Conversation {
+  id: string;
+  title: string;
+  model: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Message {
+  id: string;
+  role: "user" | "assistant" | "system";
+  content: string;
+  reasoning_content?: string | null;
+  created_at: string;
+}
+
+export interface ConversationDetail extends Conversation {
+  messages: Message[];
+}
+
+export async function apiListConversations() {
+  return apiFetch<Conversation[]>("/conversations");
+}
+
+export async function apiCreateConversation(title = "新对话", model = "deepseek-chat") {
+  return apiFetch<Conversation>("/conversations", {
+    method: "POST",
+    body: JSON.stringify({ title, model }),
+  });
+}
+
+export async function apiGetConversation(id: string) {
+  return apiFetch<ConversationDetail>(`/conversations/${id}`);
+}
+
+export async function apiUpdateConversation(id: string, data: { title?: string; model?: string }) {
+  return apiFetch<Conversation>(`/conversations/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function apiDeleteConversation(id: string) {
+  await apiFetch(`/conversations/${id}`, { method: "DELETE" });
+}
+
+// ---- SSE Stream ----
+
+export interface StreamCallbacks {
+  onThinking: (text: string) => void;
+  onContent: (text: string) => void;
+  onDone: (reasoning_content: string, content: string) => void;
+  onTitleGenerated?: (title: string) => void;
+  onError: (error: Error) => void;
+}
+
+export async function apiStreamMessage(
+  conversationId: string,
+  content: string,
+  callbacks: StreamCallbacks,
+  signal?: AbortSignal,
+) {
+  const { access } = (() => {
+    if (typeof window === "undefined") return { access: null };
+    return {
+      access: localStorage.getItem("access_token"),
+    };
+  })();
+
+  const res = await fetch(`${BACKEND_BASE}/conversations/${conversationId}/messages`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(access ? { Authorization: `Bearer ${access}` } : {}),
+    },
+    body: JSON.stringify({ content }),
+    signal,
+  });
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    callbacks.onError(new Error(body.detail || `请求失败 (${res.status})`));
+    return;
+  }
+
+  const reader = res.body!.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() || "";
+
+      for (const line of lines) {
+        if (!line.startsWith("data: ")) continue;
+        const raw = line.slice(6).trim();
+        if (!raw) continue;
+
+        try {
+          const data = JSON.parse(raw);
+          if (data.type === "thinking") {
+            callbacks.onThinking(data.content);
+          } else if (data.type === "content") {
+            callbacks.onContent(data.content);
+          } else if (data.type === "done") {
+            callbacks.onDone(data.reasoning_content || "", data.content || "");
+          } else if (data.type === "title_generated") {
+            callbacks.onTitleGenerated?.(data.title);
+          }
+        } catch {
+          // skip malformed JSON
+        }
+      }
+    }
+  } catch (err) {
+    if ((err as Error).name !== "AbortError") {
+      callbacks.onError(err as Error);
+    }
   }
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuthStore } from "@/stores/authStore";
 
@@ -10,8 +10,10 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, initialized, initialize } = useAuthStore();
   const router = useRouter();
   const pathname = usePathname();
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     initialize();
   }, [initialize]);
 
@@ -27,9 +29,9 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     }
   }, [user, initialized, pathname, router]);
 
-  if (!initialized) {
+  if (!mounted || !initialized) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" suppressHydrationWarning>
         <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
       </div>
     );

@@ -1,13 +1,15 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Send, Square } from "lucide-react";
 import { useChatStore } from "@/stores/chatStore";
 
 export default function ChatInput() {
   const [input, setInput] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const { sendMessage, isStreaming, stopStreaming } = useChatStore();
+  const router = useRouter();
+  const { sendMessage, isStreaming, stopStreaming, currentId } = useChatStore();
 
   const adjustHeight = useCallback(() => {
     const textarea = textareaRef.current;
@@ -21,15 +23,26 @@ export default function ChatInput() {
     adjustHeight();
   }, [input, adjustHeight]);
 
-  const handleSend = useCallback(() => {
+  const handleSend = useCallback(async () => {
     const trimmed = input.trim();
     if (!trimmed || isStreaming) return;
-    sendMessage(trimmed);
     setInput("");
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
     }
-  }, [input, isStreaming, sendMessage]);
+
+    if (!currentId) {
+      try {
+        const id = await useChatStore.getState().addConversation();
+        router.push(`/chat/${id}`);
+        useChatStore.getState().sendMessage(trimmed);
+      } catch {
+        return;
+      }
+    } else {
+      sendMessage(trimmed);
+    }
+  }, [input, isStreaming, sendMessage, currentId, router]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
