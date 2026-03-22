@@ -20,6 +20,7 @@ from app.schemas.chat import (
     SendMessageRequest,
 )
 from app.services.llm_service import stream_chat, generate_title
+from app.services.search_service import search_web
 
 router = APIRouter(prefix="/api/conversations", tags=["chat"])
 
@@ -151,13 +152,31 @@ async def send_message(
     conv_title = conv.title
 
     async def event_generator():
-        async for event in stream_chat(conv.model, context):
+        import json as _json
+
+        llm_context = list(context)  # 拷贝，避免污染外部变量
+
+        # ── 联网搜索 ────────────────────────────────────────────────
+        if req.enable_search:
+            yield f"data: {_json.dumps({'type': 'searching', 'query': req.content[:100]}, ensure_ascii=False)}\n\n"
+            try:
+                search_result = await search_web(req.content)
+                sources = search_result["sources"]
+                search_context = search_result["context"]
+                # 将搜索结果来源推送给前端
+                yield f"data: {_json.dumps({'type': 'sources', 'sources': sources}, ensure_ascii=False)}\n\n"
+                # 在上下文最前面注入 system 消息
+                llm_context = [{"role": "system", "content": search_context}] + llm_context
+            except Exception as e:
+                yield f"data: {_json.dumps({'type': 'search_error', 'message': str(e)}, ensure_ascii=False)}\n\n"
+
+        # ── LLM 流式调用 ─────────────────────────────────────────────
+        async for event in stream_chat(conv.model, llm_context):
             yield event
 
             if event.startswith("data: "):
                 try:
-                    import json
-                    data = json.loads(event[6:].strip())
+                    data = _json.loads(event[6:].strip())
                     if data.get("type") == "done":
                         collected["reasoning_content"] = data.get("reasoning_content", "")
                         collected["content"] = data.get("content", "")
@@ -167,7 +186,7 @@ async def send_message(
                     pass
 
     async def stream_and_save():
-        import json as _json
+        import json as _json  # noqa: F811
 
         async for event in event_generator():
             yield event

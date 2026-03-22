@@ -5,6 +5,7 @@ import {
   type Conversation,
   type Message,
   type Model,
+  type SearchSource,
   apiListConversations,
   apiCreateConversation,
   apiGetConversation,
@@ -25,6 +26,9 @@ interface ChatState {
   conversationsLoaded: boolean;
   models: Model[];
   selectedModel: string;
+  enableSearch: boolean;
+  isSearching: boolean;
+  pendingSources: SearchSource[];
 
   loadConversations: () => Promise<void>;
   loadModels: () => Promise<void>;
@@ -34,6 +38,7 @@ interface ChatState {
   deleteConversation: (id: string) => Promise<void>;
   renameConversation: (id: string, title: string) => Promise<void>;
   setSelectedModel: (model: string) => void;
+  toggleSearch: () => void;
   sendMessage: (content: string) => void;
   stopStreaming: () => void;
   reset: () => void;
@@ -52,6 +57,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
   conversationsLoaded: false,
   models: [],
   selectedModel: "deepseek-chat",
+  enableSearch: false,
+  isSearching: false,
+  pendingSources: [],
 
   loadModels: async () => {
     try {
@@ -111,6 +119,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
     return conv.id;
   },
 
+  toggleSearch: () => set((s) => ({ enableSearch: !s.enableSearch })),
+
   setSelectedModel: (model) => {
     set({ selectedModel: model });
     // 同步更新当前空对话的模型
@@ -151,7 +161,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   sendMessage: async (content) => {
-    const { currentId, isStreaming } = get();
+    const { currentId, isStreaming, enableSearch } = get();
     if (isStreaming || !currentId) return;
 
     const convId = currentId;
@@ -169,6 +179,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
       streamingContent: "",
       streamingThinking: "",
       isThinkingPhase: true,
+      isSearching: false,
+      pendingSources: [],
     }));
 
     abortController = new AbortController();
@@ -188,11 +200,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
           set((s) => ({ streamingContent: s.streamingContent + text }));
         },
         onDone: (reasoning_content, finalContent) => {
+          const { pendingSources } = get();
           const assistantMsg: Message = {
             id: `msg-${Date.now()}`,
             role: "assistant",
             content: finalContent,
             reasoning_content: reasoning_content || undefined,
+            sources: pendingSources.length > 0 ? pendingSources : undefined,
             created_at: new Date().toISOString(),
           };
           set((s) => ({
@@ -201,6 +215,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
             streamingContent: "",
             streamingThinking: "",
             isThinkingPhase: false,
+            isSearching: false,
+            pendingSources: [],
           }));
           abortController = null;
         },
@@ -211,15 +227,22 @@ export const useChatStore = create<ChatState>((set, get) => ({
             ),
           }));
         },
+        onSearching: () => {
+          set({ isSearching: true });
+        },
+        onSources: (sources) => {
+          set({ isSearching: false, pendingSources: sources });
+        },
         onError: (error) => {
           console.error("Stream error:", error);
-          const { streamingContent, streamingThinking } = get();
+          const { streamingContent, streamingThinking, pendingSources } = get();
           if (streamingContent || streamingThinking) {
             const assistantMsg: Message = {
               id: `msg-${Date.now()}`,
               role: "assistant",
               content: streamingContent || "（生成出错）",
               reasoning_content: streamingThinking || undefined,
+              sources: pendingSources.length > 0 ? pendingSources : undefined,
               created_at: new Date().toISOString(),
             };
             set((s) => ({
@@ -228,6 +251,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
               streamingContent: "",
               streamingThinking: "",
               isThinkingPhase: false,
+              isSearching: false,
+              pendingSources: [],
             }));
           } else {
             set({
@@ -235,12 +260,15 @@ export const useChatStore = create<ChatState>((set, get) => ({
               streamingContent: "",
               streamingThinking: "",
               isThinkingPhase: false,
+              isSearching: false,
+              pendingSources: [],
             });
           }
           abortController = null;
         },
       },
       abortController.signal,
+      enableSearch,
     );
   },
 
@@ -282,6 +310,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
       streamingThinking: "",
       isThinkingPhase: false,
       conversationsLoaded: false,
+      isSearching: false,
+      pendingSources: [],
     });
   },
 }));

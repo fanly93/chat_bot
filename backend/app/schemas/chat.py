@@ -39,3 +39,4 @@ class ConversationDetail(ConversationResponse):
 
 class SendMessageRequest(BaseModel):
     content: str = Field(min_length=1, max_length=20000)
+    enable_search: bool = False

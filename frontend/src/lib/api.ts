@@ -154,11 +154,18 @@ export interface Conversation {
   updated_at: string;
 }
 
+export interface SearchSource {
+  title: string;
+  url: string;
+  content: string;
+}
+
 export interface Message {
   id: string;
   role: "user" | "assistant" | "system";
   content: string;
   reasoning_content?: string | null;
+  sources?: SearchSource[];
   created_at: string;
 }
 
@@ -199,6 +206,8 @@ export interface StreamCallbacks {
   onContent: (text: string) => void;
   onDone: (reasoning_content: string, content: string) => void;
   onTitleGenerated?: (title: string) => void;
+  onSearching?: (query: string) => void;
+  onSources?: (sources: SearchSource[]) => void;
   onError: (error: Error) => void;
 }
 
@@ -207,6 +216,7 @@ export async function apiStreamMessage(
   content: string,
   callbacks: StreamCallbacks,
   signal?: AbortSignal,
+  enableSearch: boolean = false,
 ) {
   const { access } = (() => {
     if (typeof window === "undefined") return { access: null };
@@ -221,7 +231,7 @@ export async function apiStreamMessage(
       "Content-Type": "application/json",
       ...(access ? { Authorization: `Bearer ${access}` } : {}),
     },
-    body: JSON.stringify({ content }),
+    body: JSON.stringify({ content, enable_search: enableSearch }),
     signal,
   });
 
@@ -259,8 +269,12 @@ export async function apiStreamMessage(
             callbacks.onDone(data.reasoning_content || "", data.content || "");
           } else if (data.type === "title_generated") {
             callbacks.onTitleGenerated?.(data.title);
-          } else if (data.type === "error") {
-            callbacks.onError(new Error(data.message || "模型调用失败"));
+          } else if (data.type === "searching") {
+            callbacks.onSearching?.(data.query || "");
+          } else if (data.type === "sources") {
+            callbacks.onSources?.(data.sources || []);
+          } else if (data.type === "error" || data.type === "search_error") {
+            callbacks.onError(new Error(data.message || "请求失败"));
           }
         } catch {
           // skip malformed JSON

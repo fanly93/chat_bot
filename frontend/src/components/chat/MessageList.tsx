@@ -13,6 +13,8 @@ export default function MessageList() {
     streamingContent,
     streamingThinking,
     isThinkingPhase,
+    isSearching,
+    pendingSources,
   } = useChatStore();
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -41,6 +43,7 @@ export default function MessageList() {
             role={msg.role}
             content={msg.content}
             reasoning_content={msg.reasoning_content}
+            sources={msg.sources}
           />
         ))}
 
@@ -51,6 +54,8 @@ export default function MessageList() {
             isStreaming
             isThinkingPhase={isThinkingPhase}
             streamingThinking={streamingThinking}
+            isSearching={isSearching}
+            sources={isSearching ? undefined : pendingSources.length > 0 ? pendingSources : undefined}
           />
         )}
       </div>

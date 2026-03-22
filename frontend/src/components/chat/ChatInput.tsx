@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Send, Square } from "lucide-react";
+import { Send, Square, Globe } from "lucide-react";
 import { useChatStore } from "@/stores/chatStore";
 import ModelSelector from "./ModelSelector";
 
@@ -10,7 +10,7 @@ export default function ChatInput() {
   const [input, setInput] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const router = useRouter();
-  const { sendMessage, isStreaming, stopStreaming, currentId } = useChatStore();
+  const { sendMessage, isStreaming, stopStreaming, currentId, enableSearch, toggleSearch, isSearching } = useChatStore();
 
   const adjustHeight = useCallback(() => {
     const textarea = textareaRef.current;
@@ -55,8 +55,21 @@ export default function ChatInput() {
   return (
     <div className="border-t border-gray-200 bg-white px-4 py-3">
       <div className="max-w-3xl mx-auto">
-        <div className="flex items-center mb-2">
+        <div className="flex items-center justify-between mb-2">
           <ModelSelector disabled={isStreaming} />
+          <button
+            onClick={toggleSearch}
+            disabled={isStreaming}
+            title={enableSearch ? "关闭联网搜索" : "开启联网搜索"}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all disabled:opacity-50 ${
+              enableSearch
+                ? "bg-blue-100 text-blue-700 border border-blue-300"
+                : "bg-gray-100 text-gray-500 border border-gray-200 hover:bg-gray-200"
+            }`}
+          >
+            <Globe size={13} className={isSearching ? "animate-spin" : ""} />
+            <span>{isSearching ? "搜索中..." : "联网搜索"}</span>
+          </button>
         </div>
         <div className="flex items-end gap-2 bg-gray-50 rounded-2xl border border-gray-200 px-4 py-2 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
           <textarea
