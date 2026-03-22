@@ -22,16 +22,16 @@ todos:
     status: pending
   - id: p2-sidebar
     content: "Phase 2.2: 构建侧栏 -- Sidebar / ConversationList, 对话列表管理 (Mock 数据)"
-    status: pending
+    status: completed
   - id: p2-markdown
     content: "Phase 2.3: 实现 MarkdownRenderer + 代码高亮 + 复制按钮"
-    status: pending
+    status: completed
   - id: p2-thinking
     content: "Phase 2.4: 实现 ThinkingBlock 可折叠思考链组件 (Mock 数据展示)"
-    status: pending
+    status: completed
   - id: p2-streaming
     content: "Phase 2.5: 实现 StreamingText 流式打字效果 + 模拟流式 Mock"
-    status: pending
+    status: completed
   - id: p3-auth-backend
     content: "Phase 3.1: 实现后端认证 API (注册/登录/刷新Token), JWT + bcrypt"
     status: pending

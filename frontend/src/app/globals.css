@@ -1,1 +1,15 @@
 @import "tailwindcss";
+
+@plugin "@tailwindcss/typography";
+
+body {
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial, "Noto Sans SC", sans-serif;
+}
+
+.prose pre {
+  padding: 0 !important;
+  margin: 1em 0 !important;
+  background: transparent !important;
+}
