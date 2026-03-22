@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings
 from functools import lru_cache
+from typing import List
 
 
 class Settings(BaseSettings):
@@ -15,6 +16,13 @@ class Settings(BaseSettings):
     QWEN_API_KEY: str = ""
     ZHIPU_API_KEY: str = ""
     TAVILY_API_KEY: str = ""
+
+    # CORS：支持多个来源，逗号分隔，例如 "http://localhost:3000,https://yourdomain.com"
+    ALLOWED_ORIGINS: str = "http://localhost:3000"
+
+    @property
+    def allowed_origins_list(self) -> List[str]:
+        return [o.strip() for o in self.ALLOWED_ORIGINS.split(",") if o.strip()]
 
     model_config = {"env_file": ".env", "extra": "ignore"}
 
